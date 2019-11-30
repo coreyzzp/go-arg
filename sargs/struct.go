@@ -2,6 +2,7 @@ package sargs
 
 // argUnit 描述参数或者选项共有的属性
 type argUnit struct {
+	tag    *argTag
 	name   string
 	help   string
 	defval string
@@ -13,34 +14,62 @@ type argUnit struct {
 
 // argOption 描述命令中的一个option
 type argOption struct {
-	env   string   // 一个option可以通过环境变量来设置
-	alias []string // 一个option可以有多个alias，例如-v,--Verbose etc. 但是每个verbose只能对应一个option
-	unit  argUnit
+	argUnit
 }
 
 // argArgs 描述命令行参数
 type argArgs struct {
-	unit argUnit
+	argUnit
 }
-
-// subCommands 子命令数组，维护声明的顺序
-type subCommands []*argCommand
-
-// subCommands 子命令的map
-type subCommandMap map[string]*argCommand
 
 // argCommand 描述一个命令，一个命令可以有多个子命令
 type argCommand struct {
-	parent    *argCommand // 父命令
-	cmds      subCommands // 命令可以有子命令
-	cmdMap    subCommandMap
-	name      string
-	help      string
-	example   []string
+	tag     *argTag
+	name    string
+	help    string
+	example []string
+	raw     []string
+	target  interface{} // 指向目标，如果是一个repeated，则目标应该是一个slice
+
+	args []*argArgs
+
 	options   []*argOption
-	optionMap map[string][]*argOption
-	args      []*argArgs
-	raw       []string
+	optionMap map[string]*argOption
+
+	parent *argCommand   // 父命令
+	cmds   []*argCommand // 命令可以有子命令
+	cmdMap map[string]*argCommand
+}
+
+func (a *argCommand) isLastArgsMutiple() bool {
+	arglen := len(a.args)
+	if arglen == 0 {
+		return false
+	}
+
+	return a.args[arglen-1].repeated
+}
+
+func (a *argCommand) isOptionExist(tag *argTag) bool {
+	if tag.shortAlias != "" {
+		if _, ok := a.optionMap[tag.shortAlias]; ok {
+			return true
+		}
+	}
+	if tag.longAlias != "" {
+		if _, ok := a.optionMap[tag.longAlias]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func (a *argCommand) addArag() {
+
+}
+
+func (a *argCommand) addOpt() {
+
 }
 
 // argCli 描述命令行选项
@@ -52,6 +81,5 @@ type argCli struct {
 	version     string
 	description string
 	usage       string
-	cmds        subCommands
-	cmdMap      subCommandMap
+	rootCmd     *argCommand
 }

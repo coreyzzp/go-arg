@@ -7,8 +7,14 @@ type tagOption struct {
 	ignoreBySpecifyArgsEmpty bool
 }
 
+type walkOption struct {
+	// 如果是struct，也递归进去
+	walkStructField bool
+}
+
 type options struct {
-	tagopt   tagOption
+	tagOption
+	walkOption
 	progName string
 	style    ParseStyle
 }

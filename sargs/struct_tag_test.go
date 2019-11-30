@@ -19,8 +19,8 @@ func TestTagParseIgnore(t *testing.T) {
 	}{
 		{`arg:"-"`, true, &options{}}, // 通过arg"-"显式指定忽略
 		{``, true, &options{}},        // 没有arg参数，则没有option
-		{`arg:"-"`, true, &options{tagopt: tagOption{ignoreBySpecifyArgsEmpty: true}}}, // 如果没有，则也认为有option
-		{``, true, &options{tagopt: tagOption{ignoreBySpecifyArgsEmpty: true}}},        // 如果没有，主动指定，认为没有
+		{`arg:"-"`, true, &options{tagOption: tagOption{ignoreBySpecifyArgsEmpty: true}}}, // 如果没有，则也认为有option
+		{``, true, &options{tagOption: tagOption{ignoreBySpecifyArgsEmpty: true}}},        // 如果没有，主动指定，认为没有
 	}
 	for _, tc := range tbl {
 		atag, err = newArgTag(tc.tag, tc.opt)

@@ -73,7 +73,7 @@ func newArgTag(tag string, opt *options) (atag *argTag, err error) {
 
 	// 没有设置arg参数
 	if len(argTextMap) == 0 {
-		if opt.tagopt.ignoreBySpecifyArgsEmpty {
+		if opt.ignoreBySpecifyArgsEmpty {
 			// 设置了 ignoreBySpecifyArgsEmpty 参数，但是arg参数为空，但也认为这个属于option
 			atag.ignore = false
 		} else {
