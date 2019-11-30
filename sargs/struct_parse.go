@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"reflect"
+	"strings"
 )
 
 var (
@@ -163,7 +164,45 @@ func (o *orgArgCli) walk(cmd *argCommand, dest interface{}) (err error) {
 	return
 }
 
+type cmdGroup struct {
+	raw     []string
+	options map[string]string
+	args    []string
+}
+
+func isTokenVaild(token string) (err error) {
+	return
+}
+
+func parseOption(token string) (key, value string, ok bool) {
+	var (
+		long   bool
+		keylen = 1
+	)
+	if long, ok = IsOption(token); ok {
+		if long {
+			keylen = 2
+		}
+		sp := strings.Split(token[keylen:], "=")
+		if len(sp) == 2 {
+			key = sp[0]
+			value = sp[1]
+		} else if len(sp) == 1 {
+			key = sp[0]
+		}
+	}
+	return
+}
+
+func (o *orgArgCli) grapCmdGroup(args []string) (err error) {
+	return
+}
+
 func (o *orgArgCli) parseArgs(args []string) (err error) {
+
+	// for _, arg := range args {
+	// }
+
 	return
 }
 
