@@ -53,16 +53,18 @@ func (o *orgArgCli) walk(cmd *argCommand, dest interface{}) (err error) {
 	// 遍历当前struct的所有field，先解析出来
 	for index := 0; index < t.NumField(); index++ {
 		var (
-			tag       *argTag
-			eachField = t.Field(index)
-			fieldTag  = eachField.Tag
-			fieldType = eachField.Type
-			fieldKind = fieldType.Kind()
-			f         = &filedInfo{
+			tag        *argTag
+			eachField  = t.Field(index)
+			fieldTag   = eachField.Tag
+			fieldType  = eachField.Type
+			fieldKind  = fieldType.Kind()
+			fieldValue = v.Field(index)
+			f          = &filedInfo{
 				index:  index,
 				parent: t,
 				entry:  t.Field(index),
 			}
+			isSlice = false
 		)
 
 		// 解析tag，得到反射信息
@@ -88,7 +90,22 @@ func (o *orgArgCli) walk(cmd *argCommand, dest interface{}) (err error) {
 				err = fmt.Errorf("subcmd type should be a ptr to struct for %s :%w", f, err)
 				return
 			}
-			// TODO: do with subcmd
+			if cmd.isSubCmdExist(tag.subcmdName) {
+				err = fmt.Errorf("sbcmd %s exist in %s", tag.subcmdName, f)
+				return
+			}
+			newCmd := newArgCommand()
+			newCmd.name = tag.subcmdName
+			newCmd.parent = cmd
+			newCmd.tag = tag
+			newCmd.target = reflect.New(fieldType.Elem())
+
+			if err = o.walk(newCmd, newCmd.target); err != nil {
+				err = fmt.Errorf("walk subcmd at %s:%w", f, err)
+				return
+			}
+
+			cmd.addSubCmd(newCmd)
 			return
 		}
 
@@ -101,6 +118,7 @@ func (o *orgArgCli) walk(cmd *argCommand, dest interface{}) (err error) {
 			err = fmt.Errorf("not support type %s", f)
 			return
 		case reflect.Slice:
+			isSlice = true
 			// 如果是参数，对于slice必须要是最后一个，即要看下之前是否已经加过这种类型的参数了
 			if tag.tagType == KTagTypeArgs && cmd.isLastArgsMutiple() {
 				err = fmt.Errorf("[]args should be the last one %s", f)
@@ -126,27 +144,37 @@ func (o *orgArgCli) walk(cmd *argCommand, dest interface{}) (err error) {
 		}
 
 		// ok，准备构造参数
+		newUnit := &argUnit{}
+		newUnit.tag = tag
+		newUnit.repeated = isSlice
+		newUnit.target = fieldValue.Addr()
 
+		switch {
+		case tag.tagType == KTagTypeOption:
+			cmd.addOpt((*argOption)(newUnit))
+		case tag.tagType == KTagTypeArgs:
+			cmd.addArag((*argArgs)(newUnit))
+		default:
+			err = fmt.Errorf("uknown tag type %v", tag.tagType)
+			return
+		}
 	}
 
 	return
 }
 
-// func (a *orgArgCli) parseOrgOneDest(args []string, dest ...interface{}) (err error) {
-// 	t := reflect.TypeOf(dest)
-// 	if t.Kind() != reflect.Ptr {
-// 		err = fmt.Errorf("%s is not a pointer (did you forget an ampersand?)", t)
-// 		return
-// 	}
-// 	return
-// }
+func (o *orgArgCli) parseArgs(args []string) (err error) {
+	return
+}
 
-// func (a *orgArgCli) parseOrgStyle(args []string, dest ...interface{}) (err error) {
-// 	a.parseProgName(args)
-// 	for _, dst := range dest {
-// 		if err = a.parseOrgOneDest(args, dst); err != nil {
-// 			return
-// 		}
-// 	}
-// 	return
-// }
+func (a *orgArgCli) parseOrgStyle(args []string, dest interface{}) (err error) {
+	a.parseProgName(args)
+	rootCmd := newArgCommand()
+	rootCmd.target = dest
+	if err = a.walk(rootCmd, dest); err != nil {
+		err = fmt.Errorf("parse cmd meta fail:%w", err)
+		return
+	}
+	a.rootCmd = rootCmd
+	return
+}
