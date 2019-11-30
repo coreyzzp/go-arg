@@ -12,9 +12,14 @@ type walkOption struct {
 	walkStructField bool
 }
 
+type execOption struct {
+	cmdDoStyle bool
+}
+
 type options struct {
 	tagOption
 	walkOption
+	execOption
 	progName string
 	style    ParseStyle
 }

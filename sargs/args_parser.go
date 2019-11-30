@@ -2,33 +2,6 @@ package sargs
 
 import "fmt"
 
-// cmdGroup 表示一个命令组，描述的是一个命令，以及其参数与option
-type cmdGroup struct {
-	raw     []string
-	options map[string][]string
-	args    []string
-}
-
-// func parseOption(token string) (key, value string, ok bool) {
-// 	var (
-// 		long   bool
-// 		keylen = 1
-// 	)
-// 	if long, ok = isFlag(token); ok {
-// 		if long {
-// 			keylen = 2
-// 		}
-// 		sp := strings.Split(token[keylen:], "=")
-// 		if len(sp) == 2 {
-// 			key = sp[0]
-// 			value = sp[1]
-// 		} else if len(sp) == 1 {
-// 			key = sp[0]
-// 		}
-// 	}
-// 	return
-// }
-
 func parseOptionToken(token string) (optKey, optValue string, err error) {
 	return
 }
@@ -116,7 +89,7 @@ func (a *argCli) parseArgs(currCmd *argCommand, args []string) (err error) {
 		// 如果当前有subcmd，则优先判断，如果当前符号是subcmd的开始，那就递归进去处理
 		if len(currCmd.subcmds) > 0 {
 			if subcmd, ok := currCmd.subcmdMap[curr]; !ok {
-				err = newParseError(true, "found unknown subcommand %s,availd subcommand for %s is %s", curr, currCmd, currCmd.subcmds)
+				err = newParseError(currCmd, "found unknown subcommand %s,availd subcommand for %s is %s", curr, currCmd, currCmd.subcmds)
 				return
 			} else if err = a.parseArgs(subcmd, args[index+1:]); err != nil {
 				err = fmt.Errorf("parse subcmd %s:%w", subcmd, err)
@@ -142,7 +115,7 @@ func (a *argCli) parseArgs(currCmd *argCommand, args []string) (err error) {
 		}
 
 		// 这种相当于是非法的args了
-		err = newParseError(true, "found invaild args %s", curr)
+		err = newParseError(currCmd, "found invaild args %s", curr)
 		return
 	}
 

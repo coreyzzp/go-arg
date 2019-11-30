@@ -171,7 +171,8 @@ func (a *argCli) checkMetaVaild(args []string, dest interface{}) (err error) {
 	return
 }
 
-func (a *argCli) parseOrgStyle(args []string, dest interface{}) (err error) {
+// parseMeta 以dest作为目标模板解析传入的args参数，其中args参数中包含有二进制的名字
+func (a *argCli) parseMeta(args []string, dest interface{}) (err error) {
 	a.parseProgName(args)
 	rootCmd := newArgCommand()
 	rootCmd.target = dest

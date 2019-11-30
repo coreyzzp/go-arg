@@ -71,6 +71,21 @@ type argCommand struct {
 	subcmdMap map[string]*argCommand
 }
 
+// 当前赋值了可以执行的命令
+func (a *argCommand) executeCommandObject() *argCommand {
+	// 看下当前哪个subcommand有赋值
+	if len(a.subcmds) > 0 {
+		for _, sub := range a.subcmds {
+			if sub.target != nil {
+				// 递归到最底层的命令
+				return sub.executeCommandObject()
+			}
+		}
+	}
+	// 没有就是自己
+	return a
+}
+
 func (a *argCommand) String() string {
 	return a.name
 }
