@@ -1,9 +1,15 @@
 package sargs
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // argUnit 描述参数或者选项共有的属性
 type argUnit struct {
+	// 当前单元的entry的名字，一定是导出的，所以首字母一定是大写
+	name string
+
 	tag *argTag
 
 	// 当前单元是否有多个，对于option则对应多个option，对于args，则必须是最后一个
@@ -24,8 +30,44 @@ func (a *argOption) NeedValue() bool {
 	return false
 }
 
+// HelpSymbol 返回当前option的符号 like: -v,--Verbose
+func (a *argOption) HelpSymbol() string {
+	items := make([]string, 0)
+	if a.tag.shortAlias != "" {
+		items = append(items, a.tag.shortAlias)
+	}
+
+	if a.tag.longAlias != "" {
+		items = append(items, a.tag.longAlias)
+	}
+
+	return strings.Join(items, ",")
+}
+
 // argArgs 描述命令行参数
 type argArgs argUnit
+
+func (a *argArgs) helpSymbol(o *options) string {
+	return a.name
+}
+
+// HelpSymbol 返回当前参数符号 AttrID Value [Value ...]
+func (a *argArgs) HelpSymbol(o *options) string {
+	s := a.helpSymbol(o)
+	if a.IsRequired() {
+		if a.IsRepeated() {
+			return fmt.Sprintf("%s [%s ...]", s, s)
+		} else {
+			return fmt.Sprintf("%s", s)
+		}
+	} else {
+		if a.IsRepeated() {
+			return fmt.Sprintf("[%s ...]", s)
+		} else {
+			return fmt.Sprintf("[%s]", s)
+		}
+	}
+}
 
 func (a *argArgs) IsRequired() bool {
 	return a.tag.isRequired
@@ -33,10 +75,6 @@ func (a *argArgs) IsRequired() bool {
 
 func (a *argArgs) IsRepeated() bool {
 	return a.repeated
-}
-
-func (a *argArgs) HasValue() bool {
-	return false
 }
 
 type subCommands []*argCommand
@@ -64,11 +102,24 @@ type argCommand struct {
 
 	options   []*argOption
 	optionMap map[string]*argOption
+	// optionGroup map[string][]*argOption // TODO: 可以对option进行聚类
 
 	tag       *argTag     // 只有当前cmd属于另外一个subcmd的时候才存在
 	parent    *argCommand // 父命令
 	subcmds   subCommands // 子命令
 	subcmdMap map[string]*argCommand
+}
+
+func (a *argCommand) CmdPrefix() string {
+	if a.parent != nil {
+		return a.parent.CmdPrefix() + "[Options]" + a.name
+	}
+	return a.name
+}
+
+func (a *argCommand) Usage() string {
+	// return fmt.Sprintf("%s %s %s", a.CmdPrefix(), a)
+	return ""
 }
 
 // 当前赋值了可以执行的命令
@@ -106,6 +157,15 @@ func newArgCommand() *argCommand {
 		subcmds:   make([]*argCommand, 0),
 		subcmdMap: make(map[string]*argCommand, 0),
 	}
+}
+
+func (a *argCommand) hasOptionArags() bool {
+	for _, arg := range a.args {
+		if !arg.IsRequired() {
+			return true
+		}
+	}
+	return false
 }
 
 func (a *argCommand) isLastArgsMutiple() bool {

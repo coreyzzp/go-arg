@@ -162,6 +162,12 @@ func (o *argCli) walk(cmd *argCommand, dest interface{}) (err error) {
 		default:
 		}
 
+		// 如果当前是required的option，则要求所有之前的option都是required的
+		if tag.tagType == KTagTypeArgs && tag.isRequired && cmd.hasOptionArags() {
+			err = fmt.Errorf("found args required but has previous option args %s:%w", f, err)
+			return
+		}
+
 		// ok，准备构造参数
 		newUnit := &argUnit{}
 		newUnit.tag = tag
