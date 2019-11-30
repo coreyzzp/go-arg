@@ -6,7 +6,17 @@ import (
 	"strings"
 )
 
+type TagType int
+
+const (
+	KTagTypeNil = iota
+	KTagTypeOption
+	KTagTypeArgs
+	KTagTypeSubCmd
+)
+
 type argTag struct {
+	tagType    TagType
 	ignore     bool
 	isPosOpt   bool
 	isRequired bool
@@ -53,17 +63,24 @@ func splitKV(in string, sp1, sp2 string) map[string]string {
 func newArgTag(tag string, opt *options) (atag *argTag, err error) {
 	var (
 		fieldTag   = reflect.StructTag(tag)
-		argTextMap = splitKV(fieldTag.Get(TAG_SYMBOL_ARG), ",", "=")
+		argTextMap = splitKV(fieldTag.Get(TAG_SYMBOL_ARG), ",", ":")
 	)
 
 	atag = &argTag{}
+	atag.tagType = KTagTypeOption
+	atag.defval = fieldTag.Get("default")
+	atag.help = fieldTag.Get("help")
 
-	// 默认是发现arg:参数不存在就整个ignore
-	if !opt.tagopt.ignoreBySpecifyArgsEmpty {
-		if len(argTextMap) == 0 {
+	// 没有设置arg参数
+	if len(argTextMap) == 0 {
+		if opt.tagopt.ignoreBySpecifyArgsEmpty {
+			// 设置了 ignoreBySpecifyArgsEmpty 参数，但是arg参数为空，但也认为这个属于option
+			atag.ignore = false
+		} else {
+			// 否则没标注就认为不属于option
 			atag.ignore = true
-			return
 		}
+		return
 	}
 
 	// 也可以通过 arg:"-" 来忽略
@@ -72,19 +89,18 @@ func newArgTag(tag string, opt *options) (atag *argTag, err error) {
 		return
 	}
 
-	atag.defval = fieldTag.Get("default")
-	atag.help = fieldTag.Get("help")
-
 	for k, v := range argTextMap {
 		switch k {
 		case TAG_SYMBOL_POSITIONAL:
 			atag.isPosOpt = true
+			atag.tagType = KTagTypeArgs
 		case TAG_SYMBOL_ENV:
 			atag.envFrom = v
 		case TAG_SYMBOL_REQUIRED:
 			atag.isRequired = true
 		case TAG_SYMBOL_SUBCOMMAND:
 			atag.subcmdName = v
+			atag.tagType = KTagTypeSubCmd
 		default:
 			switch {
 			case v != "":
@@ -107,7 +123,7 @@ func newArgTag(tag string, opt *options) (atag *argTag, err error) {
 					err = fmt.Errorf("multiple short alias setting prev %s, now:%s", atag.shortAlias, k)
 					return
 				}
-				atag.longAlias = k
+				atag.shortAlias = k
 			default:
 				err = fmt.Errorf("unknown arg option:%s", k)
 				return
@@ -115,5 +131,6 @@ func newArgTag(tag string, opt *options) (atag *argTag, err error) {
 		}
 	}
 
+	// TODO: tag合法性判断
 	return
 }
