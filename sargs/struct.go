@@ -1,5 +1,7 @@
 package sargs
 
+import "strings"
+
 // argUnit 描述参数或者选项共有的属性
 type argUnit struct {
 	tag *argTag
@@ -17,8 +19,35 @@ type argUnit struct {
 // argOption 描述命令中的一个option
 type argOption argUnit
 
+func (a *argOption) NeedValue() bool {
+	// TODO: 看当前是否需要value的值
+	return false
+}
+
 // argArgs 描述命令行参数
 type argArgs argUnit
+
+func (a *argArgs) IsRequired() bool {
+	return a.tag.isRequired
+}
+
+func (a *argArgs) IsRepeated() bool {
+	return a.repeated
+}
+
+func (a *argArgs) HasValue() bool {
+	return false
+}
+
+type subCommands []*argCommand
+
+func (s subCommands) String() string {
+	n := make([]string, len(s))
+	for i, s := range s {
+		n[i] = s.name
+	}
+	return strings.Join(n, ",")
+}
 
 // argCommand 描述一个命令，一个命令可以有多个子命令
 type argCommand struct {
@@ -36,10 +65,22 @@ type argCommand struct {
 	options   []*argOption
 	optionMap map[string]*argOption
 
-	tag    *argTag       // 只有当前cmd属于另外一个subcmd的时候才存在
-	parent *argCommand   // 父命令
-	cmds   []*argCommand // 命令可以有子命令
-	cmdMap map[string]*argCommand
+	tag       *argTag     // 只有当前cmd属于另外一个subcmd的时候才存在
+	parent    *argCommand // 父命令
+	subcmds   subCommands // 子命令
+	subcmdMap map[string]*argCommand
+}
+
+func (a *argCommand) String() string {
+	return a.name
+}
+
+func (a *argCommand) parseFromEnv() (err error) {
+	return
+}
+
+func (a *argCommand) parseFromDefault() (err error) {
+	return
 }
 
 func newArgCommand() *argCommand {
@@ -47,8 +88,8 @@ func newArgCommand() *argCommand {
 		args:      make([]*argArgs, 0),
 		options:   make([]*argOption, 0),
 		optionMap: make(map[string]*argOption, 0),
-		cmds:      make([]*argCommand, 0),
-		cmdMap:    make(map[string]*argCommand, 0),
+		subcmds:   make([]*argCommand, 0),
+		subcmdMap: make(map[string]*argCommand, 0),
 	}
 }
 
@@ -59,6 +100,10 @@ func (a *argCommand) isLastArgsMutiple() bool {
 	}
 
 	return a.args[arglen-1].repeated
+}
+
+func (a *argCommand) findOption(optToken string) (opt *argOption) {
+	return
 }
 
 func (a *argCommand) isOptionExist(tag *argTag) bool {
@@ -76,7 +121,7 @@ func (a *argCommand) isOptionExist(tag *argTag) bool {
 }
 
 func (a *argCommand) isSubCmdExist(name string) bool {
-	if _, ok := a.cmdMap[name]; ok {
+	if _, ok := a.subcmdMap[name]; ok {
 		return true
 	}
 	return false
@@ -97,8 +142,8 @@ func (a *argCommand) addOpt(opt *argOption) {
 }
 
 func (a *argCommand) addSubCmd(cmd *argCommand) {
-	a.cmds = append(a.cmds, cmd)
-	a.cmdMap[cmd.tag.subcmdName] = cmd
+	a.subcmds = append(a.subcmds, cmd)
+	a.subcmdMap[cmd.tag.subcmdName] = cmd
 }
 
 // argCli 描述命令行选项

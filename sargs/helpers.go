@@ -20,17 +20,7 @@ func IsTypeExport(t reflect.Type) bool {
 	return IsExported(t.Name())
 }
 
-func IsOption(token string) (long, ok bool) {
-	switch {
-	case strings.HasPrefix(token, "--"):
-		if len(token) > 3 && token[2] != '-' {
-			ok = true
-			long = true
-		}
-	case strings.HasPrefix(token, "-"):
-		if len(token) > 2 {
-			ok = true
-		}
-	}
-	return
+// isFlag returns true if a token is a flag such as "-v" or "--user" but not "-" or "--"
+func isFlag(s string) bool {
+	return strings.HasPrefix(s, "-") && strings.TrimLeft(s, "-") != ""
 }

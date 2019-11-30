@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"reflect"
-	"strings"
 )
 
 var (
@@ -15,11 +14,7 @@ var (
 	ErrVersion = fmt.Errorf("version requested by user")
 )
 
-type orgArgCli struct {
-	*argCli
-}
-
-func (a *orgArgCli) parseProgName(args []string) {
+func (a *argCli) parseProgName(args []string) {
 	if len(args) > 0 {
 		if a.opt.progName != "" {
 			a.name = filepath.Base(args[0])
@@ -42,7 +37,7 @@ func (f *filedInfo) String() string {
 	return fmt.Sprintf("%s[%d].%s", f.parent.Name(), f.index, f.entry.Name)
 }
 
-func (o *orgArgCli) walk(cmd *argCommand, dest interface{}) (err error) {
+func (o *argCli) walk(cmd *argCommand, dest interface{}) (err error) {
 	v := reflect.ValueOf(dest)
 	if v.Kind() != reflect.Ptr {
 		err = fmt.Errorf("target should pe a pointer")
@@ -161,52 +156,22 @@ func (o *orgArgCli) walk(cmd *argCommand, dest interface{}) (err error) {
 		}
 	}
 
-	return
-}
-
-type cmdGroup struct {
-	raw     []string
-	options map[string]string
-	args    []string
-}
-
-func isTokenVaild(token string) (err error) {
-	return
-}
-
-func parseOption(token string) (key, value string, ok bool) {
-	var (
-		long   bool
-		keylen = 1
-	)
-	if long, ok = IsOption(token); ok {
-		if long {
-			keylen = 2
-		}
-		sp := strings.Split(token[keylen:], "=")
-		if len(sp) == 2 {
-			key = sp[0]
-			value = sp[1]
-		} else if len(sp) == 1 {
-			key = sp[0]
-		}
+	// 检查这一层的时候，就进行一些基本的检查
+	// check1: 如果command里面有subcommand，那就不能有args
+	if len(cmd.subcmds) > 0 && len(cmd.args) > 0 {
+		err = fmt.Errorf("cmd %s has subcommand %s but still has args", cmd, cmd.subcmds)
+		return
 	}
-	return
-}
-
-func (o *orgArgCli) grapCmdGroup(args []string) (err error) {
-	return
-}
-
-func (o *orgArgCli) parseArgs(args []string) (err error) {
-
-	// for _, arg := range args {
-	// }
 
 	return
 }
 
-func (a *orgArgCli) parseOrgStyle(args []string, dest interface{}) (err error) {
+func (a *argCli) checkMetaVaild(args []string, dest interface{}) (err error) {
+	// TODO:
+	return
+}
+
+func (a *argCli) parseOrgStyle(args []string, dest interface{}) (err error) {
 	a.parseProgName(args)
 	rootCmd := newArgCommand()
 	rootCmd.target = dest
@@ -215,5 +180,9 @@ func (a *orgArgCli) parseOrgStyle(args []string, dest interface{}) (err error) {
 		return
 	}
 	a.rootCmd = rootCmd
+	if err = a.checkMetaVaild(args, dest); err != nil {
+		err = fmt.Errorf("check meta vaild:%w", err)
+		return
+	}
 	return
 }
