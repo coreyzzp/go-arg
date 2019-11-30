@@ -28,6 +28,14 @@ type argTag struct {
 	envFrom    string
 }
 
+func NewSubCommandTag(name, helpText string) *argTag {
+	return &argTag{
+		tagType:    KTagTypeSubCmd,
+		subcmdName: name,
+		help:       helpText,
+	}
+}
+
 const (
 	TAG_SYMBOL_ARG        = "arg"
 	TAG_SYMBOL_POSITIONAL = "positional"

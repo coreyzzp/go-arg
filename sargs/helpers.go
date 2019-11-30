@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// IsExported
 func IsExported(name string) bool {
 	if len(name) == 0 {
 		return false
@@ -16,6 +17,7 @@ func IsExported(name string) bool {
 	return true
 }
 
+// IsTypeExport
 func IsTypeExport(t reflect.Type) bool {
 	return IsExported(t.Name())
 }

@@ -37,6 +37,29 @@ func (f *filedInfo) String() string {
 	return fmt.Sprintf("%s[%d].%s", f.parent.Name(), f.index, f.entry.Name)
 }
 
+// 兼容旧版本增加的动态增加subcmd的功能
+type SubCmd struct {
+	Name string
+	Help string
+	Obj  interface{} // 作为参考的object
+}
+
+func (a *argCli) walkForSubCommand(parent *argCommand, s *SubCmd) (err error) {
+	newCmd := newArgCommand()
+	newCmd.name = s.Name
+	newCmd.parent = parent
+	newCmd.tag = NewSubCommandTag(s.Name, s.Help)
+	newCmd.target = s.Obj
+
+	if err = a.walk(newCmd, newCmd.target); err != nil {
+		err = fmt.Errorf("create subcmd %s:%w", newCmd.name, err)
+		return
+	}
+
+	parent.addSubCmd(newCmd)
+	return
+}
+
 func (o *argCli) walk(cmd *argCommand, dest interface{}) (err error) {
 	v := reflect.ValueOf(dest)
 	if v.Kind() != reflect.Ptr {
