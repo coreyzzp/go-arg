@@ -8,6 +8,7 @@ type argUnit struct {
 	raw    string
 	// 当前单元是否有多个，对于option则对应多个option，对于args，则必须是最后一个
 	repeated bool
+	target   interface{} // 指向目标，如果是一个repeated，则目标应该是一个slice
 }
 
 // argOption 描述命令中的一个option

@@ -1,37 +1,59 @@
 package sargs
 
-type ParseStyle int
-
-const (
-	KParseStyleArgs   ParseStyle = 0
-	KParseStyleExtent ParseStyle = 1
+import (
+	"fmt"
+	"path/filepath"
+	"reflect"
 )
 
-type options struct {
-	style ParseStyle
+var (
+	// ErrHelp indicates that -h or --help were provided
+	ErrHelp = fmt.Errorf("help requested by user")
+
+	// ErrVersion indicates that --version was provided
+	ErrVersion = fmt.Errorf("version requested by user")
+)
+
+type orgArgCli struct {
+	*argCli
 }
 
-type CliOption interface {
-	apply(*options)
-}
-
-type optionFunc func(*options)
-
-func (f optionFunc) apply(o *options) {
-	f(o)
-}
-
-func WithParseStyle(s ParseStyle) CliOption {
-	return optionFunc(func(o *options) {
-		o.style = s
-	})
-}
-
-func ParseCliArags(cmds []string, opts ...CliOption) (cli *argCli, err error) {
-	defopt := &options{}
-	for _, o := range opts {
-		o.apply(defopt)
+func (a *orgArgCli) parseProgName(args []string) {
+	if len(args) > 0 {
+		if a.opt.progName != "" {
+			a.name = filepath.Base(args[0])
+		} else {
+			a.name = a.opt.progName
+		}
+	} else {
+		a.name = "program"
 	}
-	cli = &argCli{}
+}
+
+func (a *orgArgCli) parseOrgOneDest(args []string, dest ...interface{}) (err error) {
+	t := reflect.TypeOf(dest)
+	if t.Kind() != reflect.Ptr {
+		err = fmt.Errorf("%s is not a pointer (did you forget an ampersand?)", t)
+		return
+	}
+
+	// 遍历当前struct的所有field，先解析出来
+	for index := 0; index < t.NumField(); index++ {
+		// eachField := t.Field(index)
+		// fieldTag := eachField.Tag
+
+		// 如果是匿名
+	}
+
+	return
+}
+
+func (a *orgArgCli) parseOrgStyle(args []string, dest ...interface{}) (err error) {
+	a.parseProgName(args)
+	for _, dst := range dest {
+		if err = a.parseOrgOneDest(args, dst); err != nil {
+			return
+		}
+	}
 	return
 }
