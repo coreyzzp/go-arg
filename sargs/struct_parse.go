@@ -98,7 +98,7 @@ func (o *argCli) walk(cmd *argCommand, dest interface{}) (err error) {
 
 		// 如果是非匿名的，需要看是不是exported的field，如果非exported的，那也跳过
 		// 默认情况下，忽略匿名的field
-		if !eachField.Anonymous && !IsExported(eachField.Name) {
+		if !eachField.Anonymous && eachField.PkgPath == "" {
 			err = fmt.Errorf("unexported filed but has tag for %s :%w", f, err)
 			return
 		}

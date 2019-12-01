@@ -25,11 +25,11 @@ func WithParseStyle(s ParseStyle) CliOption {
 	})
 }
 
-func ParseCliArags(cmds []string, opts ...CliOption) (cli *argCli, err error) {
+func NewCli(opts ...CliOption) (cli *argCli) {
 	defopt := &options{}
 	for _, o := range opts {
 		o.apply(defopt)
 	}
-	cli = &argCli{}
+	// cli.new
 	return
 }

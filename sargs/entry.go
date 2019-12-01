@@ -1,6 +1,9 @@
 package sargs
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 func (a *argCli) Usage() string {
 	return ""
@@ -10,9 +13,22 @@ func (a *argCli) Help() string {
 	return ""
 }
 
-func ParseExecute(args []string, dest interface{}) (err error) {
-	cli := &argCli{}
+func ParseAndExecute(cli *argCli, args []string, dest interface{}) (err error) {
+	if err = Parse(cli, args, dest); err != nil {
+		err = fmt.Errorf("parse:%w", err)
+		return
+	}
 
+	// 执行默认动作
+	if err = cli.execute(); err != nil {
+		err = fmt.Errorf("execute:%w", err)
+		return
+	}
+
+	return
+}
+
+func Parse(cli *argCli, args []string, dest interface{}) (err error) {
 	if itf, ok := dest.(interface {
 		Version() string
 	}); ok {
@@ -50,11 +66,20 @@ func ParseExecute(args []string, dest interface{}) (err error) {
 		return
 	}
 
-	// 执行默认动作
-	if err = cli.execute(); err != nil {
-		err = fmt.Errorf("execute:%w", err)
-		return
-	}
-
 	return
+}
+
+func MustParseArgs(args []string, dest interface{}, opts ...CliOption) {
+	cli := NewCli(opts...)
+	if err := Parse(cli, args, dest); err != nil {
+		panic(err)
+	}
+}
+
+func MustParseCmdline(cmdline string, dest interface{}, opts ...CliOption) {
+	cli := NewCli(opts...)
+	args := strings.Split(cmdline, " ")
+	if err := Parse(cli, args, dest); err != nil {
+		panic(err)
+	}
 }
